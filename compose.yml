@@ -1,0 +1,52 @@
+services:
+  db:
+    image: mysql:8.4.11
+    hostname: db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD:  ${WP_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${WP_DB_NAME}
+      MYSQL_USER: ${WP_DB_USER}
+      MYSQL_PASSWORD: ${WP_DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - lamp
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" mysql --protocol=TCP -h 127.0.0.1 -u root --connect-timeout=2 -Nse 'SELECT 1' >/dev/null 2>&1
+      interval: 5s
+      timeout: 4s
+      retries: 30
+      start_period: 30s
+
+  web:
+    build:
+      context: .
+      args:
+        - WORDPRESS_VERSION=7.1.4
+    restart: unless-stopped
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: ${WP_DB_NAME}
+      WORDPRESS_DB_USER: ${WP_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${WP_DB_PASSWORD}
+    ports:
+      - 8080:80
+    volumes:
+      - wordpress_content:/var/www/html/wp-content
+    networks:
+      - lamp
+    depends_on:
+      db:
+        condition: service_healthy
+
+networks:
+  lamp:
+    driver: bridge
+
+volumes:
+  db_data:
+  wordpress_content:
