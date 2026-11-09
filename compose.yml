@@ -43,6 +43,22 @@ services:
       db:
         condition: service_healthy
 
+  phpmyadmin:
+    image: phpmyadmin:latest
+    hostname: phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PORT: 3306
+    ports:
+      - 8081:80
+    networks:
+      - lamp
+    depends_on:
+      db:
+        condition: service_healthy
+
 networks:
   lamp:
     driver: bridge
